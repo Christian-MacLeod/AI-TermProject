@@ -28,3 +28,7 @@ class Body:
             return True
         else:
             return False
+
+    #Ask the environment for a list of elements visible to the Agent
+    def scan(self):
+        return self.env.elementsAround(self.x, self.y)
