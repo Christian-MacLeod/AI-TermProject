@@ -1,9 +1,10 @@
 import agent
+import body
 import random
 
-class CollaborativeAgent(agent.Agent):
+class CollaborativeController():
     def __init__(self, targ_type, x_pos, y_pos, playfield):
-        super().__init__(targ_type, x_pos, y_pos, playfield)
-
+        self.body = body.Body(targ_type, x_pos, y_pos, playfield)
+        self.known_targets = []
 
 
