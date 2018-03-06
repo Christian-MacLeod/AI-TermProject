@@ -9,20 +9,11 @@ class Environment:
         self.y_lower = y_lower
 
         self.agents = []
-        self.targets = []
 
     #Registers an agent in the environment
     def registerAgent(self, agent):
         if self.validPosition(agent.x, agent.y):
             self.agents.append(agent)
-            return True
-        else:
-            return False
-
-    #Registers a terget in the environment
-    def registerTarget(self, target):
-        if self.validPosition(target.x, target.y):
-            self.targets.append(target)
             return True
         else:
             return False
@@ -48,11 +39,6 @@ class Environment:
             #If agent not at scan position AND Euclidean distance less than/equal to 10
             if (agent.x != x and agent.y != y) and math.sqrt( (x-agent.x)**2 + (y-agent.y)**2 ) <= 10:
                 visible.append(agent)
-
-        for target in self.targets:
-            #If Euclidean distance less than/equal to 10
-            if math.sqrt( (x-target.x)**2 + (y-target.y)**2 ) <= 10:
-                visible.append(target)
 
         return visible
 
