@@ -34,6 +34,11 @@ class Controller:
         #Get list of all elements around body
         return self.body.scan()
 
+    def perceiveMessage(self, message):
+        #TODO: Implement message receive in inherited controllers
+        return None
+
+
 
 class CollaborativeController(Controller):
     type = "collaborative_agent"
@@ -41,3 +46,11 @@ class CollaborativeController(Controller):
 
 class TargetController(Controller):
     type = "target"
+    collected = False
+
+    def perceiveCollected(self):
+        return self.collected
+
+    def collect(self):
+        self.collected = True
+        return True
