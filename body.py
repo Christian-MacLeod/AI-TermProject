@@ -1,10 +1,17 @@
 
 class Body:
+    controller = None
     #Create new body at given position
     def __init__(self, env, x, y):
         self.x = x
         self.y = y
         self.env = env
+
+    def registerController(self, controller):
+        self.controller = controller
+
+    def getController(self):
+        return self.controller
 
     #Move 1 unit in the given direction, if valid
     def move(self, direction):
@@ -32,3 +39,4 @@ class Body:
     #Ask the environment for a list of elements visible to the Agent
     def scan(self):
         return self.env.elementsAround(self.x, self.y)
+
