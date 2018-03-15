@@ -1,7 +1,12 @@
 import numpy as np
 #import communication
 
+#Dictionary of possible turn-end actions and their order of precedence
+PRIORITY = {"nothing":0, "move_up":4, "move_right":3, "move_down":2, "move_left":1}
+
 class Controller:
+    selected_action = "nothing"
+
     type = "undefined"
     memory = {}
     def __init__(self, faction, body):
@@ -9,6 +14,10 @@ class Controller:
         self.faction = faction
         self.body = body
         #self.private_channel = communication.PrivateChannel()
+
+    def setAction(self, action_code):
+        if PRIORITY[action_code] >= PRIORITY[self.selected_action]:
+            self.selected_action = action_code
 
     def getType(self):
         return self.type
@@ -152,7 +161,6 @@ class CollaborativeController(Controller):
     def runTurn(self):
         #Do the stuff!
         visible = self.perceiveRadar()
-        action_selected = ["nothing", 0] #Action code, action priority
         if len(visible) == 0:
             #Nothing seen
             return None
@@ -174,6 +182,7 @@ class CompetitiveController(Controller):
         return None
 
     def runTurn(self):
+
         return None
 
 
