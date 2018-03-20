@@ -1,11 +1,13 @@
 import numpy as np
 #import communication
 
-#Dictionary of possible turn-end actions and their order of precedence
-PRIORITY = {"nothing":0, "move_up":4, "move_right":3, "move_down":2, "move_left":1}
+#Dictionary of possible turn-end actions and their order of precedence (higher is better)
+PRIORITY = {"hold":0, "move_up":5, "move_right":5, "move_down":5, "move_left":5, "evade_hold":6, "evade_up":7, "evade_down":7, "evade_left":7, "evade_right":7,
+            "seek_up":4, "seek_down":3, "seek_left":2, "seek_right":1}
+
 
 class Controller:
-    selected_action = "nothing"
+    selected_action = "hold"
 
     type = "undefined"
     memory = {}
@@ -27,6 +29,24 @@ class Controller:
 
     def getPosition(self):
         return self.body.x, self.body.y
+
+    def executeAction(self):
+        sa = self.selected_action
+        if sa == "hold" or sa == "evade_hold":
+            return True
+        elif sa == "move_up" or sa == "evade_up" or sa == "seek_up":
+            return self.body.move("up")
+        elif sa == "move_down" or sa == "evade_down" or sa == "seek_down":
+            return self.body.move("down")
+        elif sa == "move_left" or sa == "evade_left" or sa == "seek_left":
+            return self.body.move("left")
+        elif sa == "move_right" or sa == "evade_right" or sa == "seek_right":
+            return self.body.move("right")
+        else:
+            return False
+
+
+        #Perform other actions
 
     # Return True if unobserved cells above agent
     def perceiveAbove(self):
@@ -163,11 +183,13 @@ class CollaborativeController(Controller):
         visible = self.perceiveRadar()
         if len(visible) == 0:
             #Nothing seen
+
+
+
             return None
         else:
             #Found something, categorize and adjust behaviour
             return None
-
 
 
 
