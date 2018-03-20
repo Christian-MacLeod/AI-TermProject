@@ -32,18 +32,19 @@ class Controller:
 
     def executeAction(self):
         sa = self.selected_action
+        action_result = False
         if sa == "hold" or sa == "evade_hold":
-            return True
+            action_result = True
         elif sa == "move_up" or sa == "evade_up" or sa == "seek_up":
-            return self.body.move("up")
+            action_result = self.body.move("up")
         elif sa == "move_down" or sa == "evade_down" or sa == "seek_down":
-            return self.body.move("down")
+            action_result = self.body.move("down")
         elif sa == "move_left" or sa == "evade_left" or sa == "seek_left":
-            return self.body.move("left")
+            action_result = self.body.move("left")
         elif sa == "move_right" or sa == "evade_right" or sa == "seek_right":
-            return self.body.move("right")
-        else:
-            return False
+            action_result = self.body.move("right")
+
+        return action_result
 
 
         #Perform other actions
@@ -179,19 +180,8 @@ class CollaborativeController(Controller):
         return None
 
     def runTurn(self):
-        #Do the stuff!
-        visible = self.perceiveRadar()
-        if len(visible) == 0:
-            #Nothing seen
 
-
-
-            return None
-        else:
-            #Found something, categorize and adjust behaviour
-            return None
-
-
+        return None
 
 
 
@@ -203,7 +193,47 @@ class CompetitiveController(Controller):
         #Need to do something with this, gonna be global
         return None
 
+
+
     def runTurn(self):
+        #Do the stuff!
+        visible = self.perceiveRadar()
+        if len(visible) == 0:
+            #Nothing seen
+            #Check in all directions, move towards highest priority direction with unobserved cells
+            if self.perceiveAbove():
+                self.setAction("seek_up")
+            if self.perceiveBelow():
+                self.setAction("seek_down")
+            if self.perceiveLeft():
+                self.setAction("seek_left")
+            if self.perceiveRight():
+                self.setAction("seek_right")
+
+        else:
+            #Found something
+
+            #Check all radar hits
+            for entity in visible:
+                if entity.getType() != "target":
+                    #Other agent, Evade!
+                    #TODO; Establish comms, decide where to go
+                    #Temporarily just holding position;
+                    self.setAction("evade_hold")
+                else:
+                    #Found a target
+                    if entity.getFaction() == self.getFaction():
+                        #Found my target!
+                        if not entity.perceiveCollected():
+                            entity.collect()
+                    else:
+                        #Found someone else's target
+                        entity_x, entity_y = entity.getPosition()
+                        #Remember this for later
+                        if entity.getFaction() in self.memory:
+                            self.memory[entity.getFaction()].append([entity_x, entity_y])
+                        else:
+                            self.memory[entity.getFaction()] = [[entity_x, entity_y]]
 
         return None
 
