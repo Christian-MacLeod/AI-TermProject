@@ -59,21 +59,25 @@ class Game:
 
             #Insert agent controller
             agent_stats = {"faction":faction, "controller":self.createAgent(faction, faction_bodies[0]),
-                           "collected_targets":0, "steps_taken":0, "happiness":0, "max_happiness":0,
-                           "min_happiness":0, "avg_happiness":0, "std_happiness":0}
+                           "collected_targets":0, "steps_taken":0, "happiness":[]}
             self.agents.append(agent_stats)
 
         return
 
 
     def playTurns(self):
-        for agent in self.agents:
+        for agent in self.agents: #For each agent, perform turn and evaluate performance
             turn_report = agent["controller"].playTurn()
+            #If agent successfully performed something other than staying still, increment steps
+            if turn_report["action_performed"] != "hold" and turn_report["action_performed"] != "evade_hold" and turn_report["action_result"] == True:
+                agent["steps_taken"] += 1
 
+                #Increment collected_targets if needed
+                if turn_report["collected_target"]:
+                    agent["collected_targets"] += 1
 
-
-
-
+            #Recalculate happiness
+            agent["happiness"].append(agent["collected_targets"]/(agent["steps_taken"]+1))
         return
 
     def createAgent(self, faction, body):
