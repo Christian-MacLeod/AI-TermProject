@@ -9,8 +9,10 @@ class GameMaster:
         return
 
     def beginGame(self, scenario):
+        factions = {"red", "blue", "yellow", "green", "purple"}
+
         if scenario == "competition":
-            self.game = Competition([100,100])
+            self.game = Competition([100,100], factions)
             return
         elif scenario == "collaboration":
             return
@@ -22,20 +24,23 @@ class GameMaster:
         return
 
     def compileResults(self):
-        return None
+        return
 
     def finishGame(self):
-        return None
+        return
 
 
 class Game:
 
-    def __init__(self, bounds):
-        #Create the playfield
+    def __init__(self, bounds, factions):
+        #Create the environment
         self.field = env.Environment(bounds[0], 0, bounds[1], 0)
+        self.targets = []
+        self.agents = []
+        self.turns = 0
 
-        #Create five factions
-        for faction in {"red", "blue", "yellow", "green", "purple"}:
+        #Create factions
+        for faction in factions:
             #With 6 bodies each
             faction_bodies = []
             while len(faction_bodies) <= 6:
@@ -43,14 +48,32 @@ class Game:
                 x_coord = rnd.randrange(self.field.x_lower, self.field.x_upper)
                 y_coord = rnd.randrange(self.field.y_lower, self.field.y_upper)
                 body = bod.Body(self.field, x_coord, y_coord)
-                #If the location is valid, add it to the list, otherwise re-roll
+                #If the location is valid, add it to the list; otherwise re-roll
                 if self.field.registerAgent(body):
                     faction_bodies.append(body)
-            #TODO: Create the faction brains & attach to bodies
+
+
+            #Insert target controllers
+            for i in range(1,len(faction_bodies)):
+                self.targets.append(con.TargetController(faction,faction_bodies[i]))
+
+            #Insert agent controller
+            agent_stats = {"faction":faction, "controller":self.createAgent(faction, faction_bodies[0]),
+                           "collected_targets":0, "steps_taken":0, "happiness":0, "max_happiness":0,
+                           "min_happiness":0, "avg_happiness":0, "std_happiness":0}
+            self.agents.append(agent_stats)
+
         return
 
 
-    def start(self):
+    def playTurns(self):
+        for agent in self.agents:
+            turn_report = agent["controller"].playTurn()
+
+
+
+
+
         return
 
     def createAgent(self, faction, body):

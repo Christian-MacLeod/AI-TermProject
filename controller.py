@@ -15,6 +15,7 @@ class Controller:
         self.visited = np.full((body.env.y_upper - body.env.y_lower), (body.env.x_upper - body.env.x_lower), False)
         self.faction = faction
         self.body = body
+        self.body.registerController(self)
         #self.private_channel = communication.PrivateChannel()
 
     def setAction(self, action_code):
@@ -184,18 +185,17 @@ class CollaborativeController(Controller):
         return None
 
 
-
-
 class CompetitiveController(Controller):
     type = "competitive_agent"
 
     def perceiveMessage(self, message):
-        #Need to do something with this, gonna be global
+        #Receive message!
+        #NOTE: Called by other agents during their turn
         return None
 
 
-
     def runTurn(self):
+        action_report = {"action_performed":"", "action_result":"", "collected_target":False}
         #Do the stuff!
         visible = self.perceiveRadar()
         if len(visible) == 0:
@@ -226,6 +226,7 @@ class CompetitiveController(Controller):
                         #Found my target!
                         if not entity.perceiveCollected():
                             entity.collect()
+                            action_report["collected_target"] = True
                     else:
                         #Found someone else's target
                         entity_x, entity_y = entity.getPosition()
@@ -235,7 +236,11 @@ class CompetitiveController(Controller):
                         else:
                             self.memory[entity.getFaction()] = [[entity_x, entity_y]]
 
-        return None
+        action_report["action_performed"] = self.selected_action
+        action_report["action_result"] = self.executeAction()
+        #TODO: Change action if failed; Use priority stack on selected_action?
+
+        return action_report
 
 
 
