@@ -12,11 +12,12 @@ class Controller:
     type = "undefined"
     memory = {}
     def __init__(self, faction, body):
-        self.visited = np.full((body.env.y_upper - body.env.y_lower), (body.env.x_upper - body.env.x_lower), False)
+        self.visited = np.full(((body.env.y_upper - body.env.y_lower), (body.env.x_upper - body.env.x_lower)), False)
         self.faction = faction
         self.body = body
         self.body.registerController(self)
         #self.private_channel = communication.PrivateChannel()
+
 
     def setAction(self, action_code):
         if PRIORITY[action_code] >= PRIORITY[self.selected_action]:
@@ -158,9 +159,15 @@ class Controller:
                 x_test = x + i
                 y_test = y + j
 
-                #Mark visited if already visited, or if Euclidean distance less than/equal to 10
-                if not self.visited[x_test][y_test]:
-                    self.visited[x_test][y_test] = np.sqrt((x_test-x)**2 + (y_test-y)**2) <=10
+                #Ensure coordinates are within bounds
+                x_bounded = self.body.env.x_lower <= x_test and x_test < self.body.env.x_upper
+                y_bounded = self.body.env.y_lower <= y_test and y_test < self.body.env.y_upper
+
+                # Mark visited if already visited, or if Euclidean distance less than/equal to 10
+                if x_bounded and y_bounded:
+                    if not self.visited[x_test][y_test]:
+                        euclid_dist = np.sqrt((x_test-x)**2 + (y_test-y)**2)
+                        self.visited[x_test][y_test] = euclid_dist <= 10
 
         #Get list of all elements around body
         return self.body.scan()
@@ -195,6 +202,7 @@ class CompetitiveController(Controller):
 
 
     def runTurn(self):
+        print("{0} agent running turn".format(self.faction))
         action_report = {"action_performed":"", "action_result":"", "collected_target":False}
         #Do the stuff!
         visible = self.perceiveRadar()
@@ -215,7 +223,7 @@ class CompetitiveController(Controller):
 
             #Check all radar hits
             for entity in visible:
-                if entity.getType() != "target":
+                if entity.controller.getType() != "target":
                     #Other agent, Evade!
                     #TODO; Establish comms, decide where to go
                     #Temporarily just holding position;

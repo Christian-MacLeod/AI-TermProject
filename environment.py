@@ -38,7 +38,7 @@ class Environment:
         for agent in self.agents:
             #If agent not at scan position AND Euclidean distance less than/equal to 10
             if (agent.x != x and agent.y != y) and math.sqrt( (x-agent.x)**2 + (y-agent.y)**2 ) <= 10:
-                if not (agent.getType() == "target" and not agent.collected):
+                if not (agent.controller.getType() == "target" and not agent.controller.collected):
                     visible.append(agent)
 
         return visible
