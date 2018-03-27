@@ -32,13 +32,18 @@ class GameMaster:
         return
 
     def gameLoop(self):
+        steps = 0
         while True:
             #Do until done
             self.game.playTurns()
-            Ui.Interface.drawMaps(self.game.agents)
+
+            steps += 1
             #Check if won
-            if input("Next turn? (n)") == "n":
-                break
+            if steps % 10 == 0:
+                Ui.Interface.drawMaps(self.game.agents)
+                if input("Next 10 turns? (n)") == "n":
+                    break
+
 
         self.finishGame()
 
@@ -52,7 +57,6 @@ class Game:
         self.field = Env.Environment(bounds[0], 0, bounds[1], 0)
         self.targets = []
         self.agents = []
-        self.turns = 0
 
         #Create factions
         for faction in factions:

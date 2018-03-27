@@ -12,9 +12,9 @@ class Controller:
     type = "undefined"
     memory = {}
     def __init__(self, faction, body):
-        self.visited = np.full(((body.env.y_upper - body.env.y_lower), (body.env.x_upper - body.env.x_lower)), False)
-        self.faction = faction
         self.body = body
+        self.visited = [ [0 for y in range(0, self.body.env.y_upper - self.body.env.y_lower)] for x in range(0, self.body.env.x_upper - self.body.env.y_lower) ]
+        self.faction = faction
         self.body.registerController(self)
         #self.private_channel = communication.PrivateChannel()
 
@@ -72,7 +72,7 @@ class Controller:
         #Check upwards until unvisited element or boundary
         for y_observing in range(y_pos, self.body.env.y_upper):
             for x_observing in range(x_low, x_high):
-                if not self.visited[x_observing, y_observing]:
+                if not self.visited[x_observing][y_observing]:
                     return True
         return False
 
@@ -96,7 +96,7 @@ class Controller:
         # Check downwards until unvisited element or boundary
         for y_observing in range(y_pos, self.body.env.y_upper, -1):
             for x_observing in range(x_low, x_high):
-                if not self.visited[x_observing, y_observing]:
+                if not self.visited[x_observing][y_observing]:
                     return True
         return False
 
@@ -120,7 +120,7 @@ class Controller:
         #Check left until unvisited element or boundary
         for x_observing in range(x_pos, self.body.env.x_lower, -1):
             for y_observing in range(y_low, y_high):
-                if not self.visited[x_observing, y_observing]:
+                if not self.visited[x_observing][y_observing]:
                     return True
         return False
 
@@ -144,7 +144,7 @@ class Controller:
         # Check right until unvisited element or boundary
         for x_observing in range(x_pos, self.body.env.x_lower):
             for y_observing in range(y_low, y_high):
-                if not self.visited[x_observing, y_observing]:
+                if not self.visited[x_observing][y_observing]:
                     return True
         return False
 
@@ -167,7 +167,7 @@ class Controller:
                 if x_bounded and y_bounded:
                     if not self.visited[x_test][y_test]:
                         euclid_dist = np.sqrt((x_test-x)**2 + (y_test-y)**2)
-                        self.visited[x_test][y_test] = euclid_dist <= 10
+                        self.visited[x_test][y_test] = int (euclid_dist <= 10)
 
         #Get list of all elements around body
         return self.body.scan()
