@@ -6,13 +6,15 @@ import userinterface as Ui
 import threading
 
 class GameMaster(threading.Thread):
-    def __init__(self):
+    def __init__(self, scenario, sem):
         threading.Thread.__init__(self)
         self.game = None
         self.ui = Ui.Interface()
+        self.scenario = scenario
+        self.sem = sem
 
-    def run(self, scenario):
-        self.beginGame(scenario)
+    def run(self):
+        self.beginGame(self.scenario)
 
     def beginGame(self, scenario):
         factions = {"red", "blue", "yellow", "green", "purple"}

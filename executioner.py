@@ -1,9 +1,13 @@
 import threading
+import gamemaster
+
 class Executioner:
 
     def __init__(self):
         self.log_file = "G21_1.csv"
         self.results_file = "G21_2.csv"
+        self.max_threads = 5
+        self.thread_count_sem = threading.BoundedSemaphore(self.max_threads)
         return
 
     def writeToLog(self, lines):
@@ -25,11 +29,19 @@ class Executioner:
         pass
 
     def spawnCompetitiveGames(self, amount):
-
-        pass
+        for i in range(amount):
+            self.thread_count_sem.acquire()
+            game = gamemaster.GameMaster("competition", self.thread_count_sem)
+            game.run()
 
     def spawnCollaborativeGames(self, amount):
-        pass
+        for i in range(amount):
+            self.thread_count_sem.acquire()
+            game = gamemaster.GameMaster("collaboration", self.thread_count_sem)
+            game.run()
 
     def spawnCompassionateGames(self, amount):
-        pass
+        for i in range(amount):
+            self.thread_count_sem.acquire()
+            game = gamemaster.GameMaster("compassion", self.thread_count_sem)
+            game.run()
