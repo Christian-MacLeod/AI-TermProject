@@ -3,7 +3,11 @@ from PIL import Image
 
 class Interface:
 
-    def __init__(self, game):
+    def __init__(self):
+        self.agents = []
+        self.targets = []
+
+    def registerGame(self, game):
         self.agents = game.agents
         self.targets = game.targets
 
@@ -27,6 +31,4 @@ class Interface:
         return
 
     def drawMap(self):
-
-
-        return
+        pass

@@ -2,11 +2,15 @@ import numpy as np
 #import communication
 
 #Dictionary of possible turn-end actions and their order of precedence (higher is better)
-PRIORITY = {"hold":0, "move_up":5, "move_right":5, "move_down":5, "move_left":5, "evade_hold":6, "evade_up":7, "evade_down":7, "evade_left":7, "evade_right":7,
-            "seek_up":4, "seek_down":3, "seek_left":2, "seek_right":1}
+#PRIORITY = {"hold":0, "move_up":5, "move_right":5, "move_down":5, "move_left":5, "evade_hold":6, "evade_up":7, "evade_down":7, "evade_left":7, "evade_right":7,
+#            "seek_up":4, "seek_down":3, "seek_left":2, "seek_right":1}
 
 
 class Controller:
+    action_classes = {"move":1, "evade":3, "seek":2, "hold":0}
+    action_patterns = {"up":4, "right":3, "down":2, "left":1, "steady":0}
+
+    selected_pattern = { "steady" }
     selected_action = "hold"
 
     type = "undefined"
@@ -19,9 +23,13 @@ class Controller:
         #self.private_channel = communication.PrivateChannel()
 
 
-    def setAction(self, action_code):
-        if PRIORITY[action_code] >= PRIORITY[self.selected_action]:
-            self.selected_action = action_code
+    def setAction(self, action_class, action_code):
+        if self.action_classes[action_class] >= self.action_classes[self.selected_action] and self.selected_action != action_class:
+            self.selected_action = action_class
+            self.selected_pattern = {"hold", action_code}
+        elif self.selected_action == action_class:
+            self.selected_pattern.add(action_code)
+
 
     def getType(self):
         return self.type
@@ -33,23 +41,41 @@ class Controller:
         return self.body.x, self.body.y
 
     def executeAction(self):
-        sa = self.selected_action
-        action_result = False
-        if sa == "hold" or sa == "evade_hold":
-            action_result = True
-        elif sa == "move_up" or sa == "evade_up" or sa == "seek_up":
-            action_result = self.body.move("up")
-        elif sa == "move_down" or sa == "evade_down" or sa == "seek_down":
-            action_result = self.body.move("down")
-        elif sa == "move_left" or sa == "evade_left" or sa == "seek_left":
-            action_result = self.body.move("left")
-        elif sa == "move_right" or sa == "evade_right" or sa == "seek_right":
-            action_result = self.body.move("right")
+        #Do nothing if holding position
+        if self.selected_action == "hold":
+            return True
+        else:
+            #Repeat until successful action or empty action list
+            while True:
+                #Grab something from the list and add it back
+                chosen = self.selected_pattern.pop()
+                self.selected_pattern.add(chosen)
 
-        return action_result
+                #Choose the highest priority item still in the list
+                for pattern in self.selected_pattern:
+                    if self.action_patterns[pattern] >= chosen:
+                        chosen = pattern
 
-
-        #Perform other actions
+                #Try to execute
+                action_result = False
+                if chosen == "steady":
+                    return True
+                else:
+                    if chosen == "up":
+                        action_result = self.body.move("up")
+                    elif chosen == "down":
+                        action_result = self.body.move("down")
+                    elif chosen == "left":
+                        action_result = self.body.move("left")
+                    elif chosen == "right":
+                        action_result = self.body.move("right")
+                #Return if finished, else check if anything left to try
+                if action_result:
+                    return True
+                else:
+                    self.selected_pattern.remove(chosen)
+                    if len(self.selected_pattern) == 0:
+                        return False
 
     # Return True if unobserved cells above agent
     def perceiveAbove(self):
@@ -210,13 +236,13 @@ class CompetitiveController(Controller):
             #Nothing seen
             #Check in all directions, move towards highest priority direction with unobserved cells
             if self.perceiveAbove():
-                self.setAction("seek_up")
+                self.setAction("seek","up")
             if self.perceiveBelow():
-                self.setAction("seek_down")
+                self.setAction("seek","down")
             if self.perceiveLeft():
-                self.setAction("seek_left")
+                self.setAction("seek","left")
             if self.perceiveRight():
-                self.setAction("seek_right")
+                self.setAction("seek","right")
 
         else:
             #Found something
