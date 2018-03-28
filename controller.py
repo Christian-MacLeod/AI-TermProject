@@ -26,7 +26,7 @@ class Controller:
     def setAction(self, action_class, action_code):
         if self.action_classes[action_class] >= self.action_classes[self.selected_action] and self.selected_action != action_class:
             self.selected_action = action_class
-            self.selected_pattern = {"hold", action_code}
+            self.selected_pattern = {"steady", action_code}
         elif self.selected_action == action_class:
             self.selected_pattern.add(action_code)
 
@@ -53,7 +53,7 @@ class Controller:
 
                 #Choose the highest priority item still in the list
                 for pattern in self.selected_pattern:
-                    if self.action_patterns[pattern] >= chosen:
+                    if self.action_patterns[pattern] >= self.action_patterns[chosen]:
                         chosen = pattern
 
                 #Try to execute
@@ -251,9 +251,10 @@ class CompetitiveController(Controller):
             for entity in visible:
                 if entity.controller.getType() != "target":
                     #Other agent, Evade!
+                    print("I've got you in my sights!")
                     #TODO; Establish comms, decide where to go
                     #Temporarily just holding position;
-                    self.setAction("evade_hold")
+                    self.setAction("evade", "steady")
                 else:
                     #Found a target
                     if entity.getFaction() == self.getFaction():
@@ -272,8 +273,6 @@ class CompetitiveController(Controller):
 
         action_report["action_performed"] = self.selected_action
         action_report["action_result"] = self.executeAction()
-        #TODO: Change action if failed; Use priority stack on selected_action?
-
         return action_report
 
 

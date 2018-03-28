@@ -3,19 +3,23 @@ import body as Bod
 import controller as Con
 import random as Rnd
 import userinterface as Ui
+import threading
 
-class GameMaster:
+class GameMaster(threading.Thread):
     def __init__(self):
+        threading.Thread.__init__(self)
         self.game = None
         self.ui = Ui.Interface()
-        return
+
+    def run(self, scenario):
+        self.beginGame(scenario)
 
     def beginGame(self, scenario):
         factions = {"red", "blue", "yellow", "green", "purple"}
 
         #Create a game object, and start the loop
         if scenario == "competition":
-            self.game = Competition([100, 100], factions)
+            self.game = Competition([99, 99], factions)
         elif scenario == "collaboration":
             return
         elif scenario == "compassion":
@@ -25,11 +29,8 @@ class GameMaster:
 
         self.gameLoop()
 
-    def compileResults(self):
-        return
-
     def finishGame(self):
-        return
+        pass
 
     def gameLoop(self):
         steps = 0
@@ -46,8 +47,6 @@ class GameMaster:
 
 
         self.finishGame()
-
-
 
 
 class Game:
@@ -84,7 +83,6 @@ class Game:
 
 
     def playTurns(self):
-        print(len(self.agents))
         for agent in self.agents: #For each agent, perform turn and evaluate performance
             turn_report = agent["controller"].runTurn()
             #If agent successfully performed something other than staying still, increment steps
