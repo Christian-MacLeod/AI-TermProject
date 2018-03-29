@@ -4,14 +4,25 @@ import controller as Con
 import random as Rnd
 import userinterface as Ui
 import threading
+import numpy
 
 class GameMaster(threading.Thread):
-    def __init__(self, scenario, sem):
+    def __init__(self, scenario, sem, iteration, logWriter):
         threading.Thread.__init__(self)
         self.game = None
         self.ui = Ui.Interface()
         self.scenario = scenario
+        self.iteration = iteration
         self.sem = sem
+        self.writeLog = logWriter
+
+        if scenario == "competition":
+            self.scenario = 1
+        elif scenario == "collaboration":
+            self.scenario = 2
+        elif scenario == "compassion":
+            self.scenario = 3
+
 
     def run(self):
         self.beginGame(self.scenario)
@@ -20,11 +31,11 @@ class GameMaster(threading.Thread):
         factions = {"red", "blue", "yellow", "green", "purple"}
 
         #Create a game object, and start the loop
-        if scenario == "competition":
+        if scenario == 1:
             self.game = Competition([99, 99], factions)
-        elif scenario == "collaboration":
+        elif scenario == 2:
             return
-        elif scenario == "compassion":
+        elif scenario == 3:
             return
         else:
             return
@@ -32,20 +43,47 @@ class GameMaster(threading.Thread):
         self.gameLoop()
 
     def finishGame(self):
-        pass
+
+        #Compile agent stats into required CSV lines
+        lines = []
+        for stat_sheet in self.game.agents:
+            factions = ["red", "blue", "yellow", "green", "purple"]
+
+            happiness = stat_sheet["happiness"]
+            max_happiness = numpy.max(happiness)
+            min_happiness = numpy.min(happiness)
+            competitiveness = (happiness[-1]-min_happiness)/(max_happiness-min_happiness)
+
+            line = "{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10}".format(self.scenario, self.iteration, factions.index(stat_sheet["faction"]),
+                                                                         stat_sheet["collected_targets"], stat_sheet["steps_taken"],
+                                                                         happiness[-1], max_happiness,
+                                                                         min_happiness, numpy.average(happiness),
+                                                                         numpy.std(happiness), competitiveness)
+            lines.append(line)
+
+        #Write results to log file
+        self.writeLog(lines)
+
+
+        #Release the thread
+        self.sem.release()
 
     def gameLoop(self):
         steps = 0
         while True:
-            #Do until done
-            self.game.playTurns()
+            #Run each agent's turn
+            game_won = self.game.playTurns()
 
+            #TODO: Replace with proper interface system
             steps += 1
-            #Check if won
             if steps % 10 == 0:
                 Ui.Interface.drawMaps(self.game.agents)
                 if input("Next 10 turns? (n)") == "n":
                     break
+
+            #Check for a win, leave the loop if satisfied
+            if game_won:
+                break
 
 
         self.finishGame()
@@ -97,10 +135,17 @@ class Game:
 
                 #Recalculate happiness
                 agent["happiness"].append(agent["collected_targets"]/(agent["steps_taken"]+1))
-        return
+
+            #Stop playing if the game is won
+            if self.checkWin():
+                return True
+        return False
 
 
     def createAgent(self, faction, body):
+        return None
+
+    def checkWin(self):
         return None
 
 #Create a game with competitive AI
@@ -108,3 +153,9 @@ class Competition(Game):
 
     def createAgent(self, faction, body):
         return Con.CompetitiveController(faction, body)
+
+    def checkWin(self):
+        for stat_sheet in self.agents:
+            if stat_sheet["collected_targets"] == 5:
+                return True
+        return False

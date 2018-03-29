@@ -1,9 +1,6 @@
 import numpy as np
 #import communication
 
-#Dictionary of possible turn-end actions and their order of precedence (higher is better)
-#PRIORITY = {"hold":0, "move_up":5, "move_right":5, "move_down":5, "move_left":5, "evade_hold":6, "evade_up":7, "evade_down":7, "evade_left":7, "evade_right":7,
-#            "seek_up":4, "seek_down":3, "seek_left":2, "seek_right":1}
 
 
 class Controller:
@@ -14,7 +11,9 @@ class Controller:
     selected_action = "hold"
 
     type = "undefined"
-    memory = {}
+    memory = { "agent_reliability":{"red":0.0, "blue":0.0, "yellow":0.0, "green":0.0, "purple":0.0},
+               "found_targets":{"red":[], "blue":[], "yellow":[], "green":[], "purple":[]}
+             }
     def __init__(self, faction, body):
         self.body = body
         self.visited = [ [0 for y in range(0, self.body.env.y_upper - self.body.env.y_lower)] for x in range(0, self.body.env.x_upper - self.body.env.y_lower) ]
@@ -29,7 +28,6 @@ class Controller:
             self.selected_pattern = {"steady", action_code}
         elif self.selected_action == action_class:
             self.selected_pattern.add(action_code)
-
 
     def getType(self):
         return self.type
@@ -226,35 +224,49 @@ class CompetitiveController(Controller):
         #NOTE: Called by other agents during their turn
         return None
 
+    def prepareSeekTargets(self):
+        self.prepareGatherKnownTarget()
+
+        # Check in all directions, move towards highest priority direction with unobserved cells
+        if self.perceiveAbove():
+            self.setAction("seek", "up")
+        if self.perceiveBelow():
+            self.setAction("seek", "down")
+        if self.perceiveLeft():
+            self.setAction("seek", "left")
+        if self.perceiveRight():
+            self.setAction("seek", "right")
+
+
+    def prepareEvadeAgents(self):
+        print("I've got you in my sights!")
+        # TODO; Establish comms, decide where to go
+        # Temporarily just holding position;
+        self.setAction("evade", "steady")
+
+
+    def prepareGatherKnownTarget(self):
+        pass
+
+
+    def memorizeObservedTarget(self, entity_pos, entity_faction):
+        #self.memory["known_targets"][entity.getFaction].append((entity_x, entity_y, self.getFaction()))
+        pass
 
     def runTurn(self):
         print("{0} agent running turn".format(self.faction))
         action_report = {"action_performed":"", "action_result":"", "collected_target":False}
         #Do the stuff!
         visible = self.perceiveRadar()
-        if len(visible) == 0:
-            #Nothing seen
-            #Check in all directions, move towards highest priority direction with unobserved cells
-            if self.perceiveAbove():
-                self.setAction("seek","up")
-            if self.perceiveBelow():
-                self.setAction("seek","down")
-            if self.perceiveLeft():
-                self.setAction("seek","left")
-            if self.perceiveRight():
-                self.setAction("seek","right")
-
-        else:
+        if len(visible) != 0:
             #Found something
 
             #Check all radar hits
             for entity in visible:
                 if entity.controller.getType() != "target":
                     #Other agent, Evade!
-                    print("I've got you in my sights!")
-                    #TODO; Establish comms, decide where to go
-                    #Temporarily just holding position;
-                    self.setAction("evade", "steady")
+                    #self.prepareEvadeAgents() TODO: Implement the evade functions
+                    self.prepareSeekTargets()
                 else:
                     #Found a target
                     if entity.getFaction() == self.getFaction():
@@ -263,17 +275,21 @@ class CompetitiveController(Controller):
                             entity.collect()
                             action_report["collected_target"] = True
                     else:
-                        #Found someone else's target
-                        entity_x, entity_y = entity.getPosition()
-                        #Remember this for later
-                        if entity.getFaction() in self.memory:
-                            self.memory[entity.getFaction()].append([entity_x, entity_y])
-                        else:
-                            self.memory[entity.getFaction()] = [[entity_x, entity_y]]
+                        #Found someone else's target, remember for later
+                        self.memorizeObservedTarget(entity.getPosition(), entity.getFaction())
 
+        self.prepareSeekTargets() #Look for targets
+
+
+        #Execute the action and finalize the report
         action_report["action_performed"] = self.selected_action
         action_report["action_result"] = self.executeAction()
         return action_report
+
+
+
+class CompassionateController(Controller):
+    pass
 
 
 
