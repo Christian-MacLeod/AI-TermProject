@@ -12,13 +12,15 @@ class Controller:
 
     type = "undefined"
     memory = { "agent_reliability":{"red":0.0, "blue":0.0, "yellow":0.0, "green":0.0, "purple":0.0},
-               "found_targets":{"red":[], "blue":[], "yellow":[], "green":[], "purple":[]}
+               "found_targets":{"red":[], "blue":[], "yellow":[], "green":[], "purple":[]},
+               "waypoint":(0,0)
              }
     def __init__(self, faction, body):
         self.body = body
-        self.visited = [ [0 for y in range(0, self.body.env.y_upper - self.body.env.y_lower)] for x in range(0, self.body.env.x_upper - self.body.env.y_lower) ]
+        self.visited = [ [0 for y in range(0, self.body.env.y_upper - self.body.env.y_lower + 1)] for x in range(0, self.body.env.x_upper - self.body.env.x_lower + 1) ]
         self.faction = faction
         self.body.registerController(self)
+        self.memory["waypoint"] = self.getPosition()
         #self.private_channel = communication.PrivateChannel()
 
 
@@ -38,14 +40,20 @@ class Controller:
     def getPosition(self):
         return self.body.x, self.body.y
 
+    def clearAction(self):
+        self.selected_pattern = {"steady"}
+        self.selected_action = "hold"
+
     def executeAction(self):
         #Do nothing if holding position
         if self.selected_action == "hold":
+            self.clearAction()
             return True
         else:
             #Repeat until successful action or empty action list
             while True:
                 #Grab something from the list and add it back
+                print(self.selected_pattern)
                 chosen = self.selected_pattern.pop()
                 self.selected_pattern.add(chosen)
 
@@ -57,6 +65,7 @@ class Controller:
                 #Try to execute
                 action_result = False
                 if chosen == "steady":
+                    self.clearAction()
                     return True
                 else:
                     if chosen == "up":
@@ -69,10 +78,12 @@ class Controller:
                         action_result = self.body.move("right")
                 #Return if finished, else check if anything left to try
                 if action_result:
+                    self.clearAction()
                     return True
                 else:
                     self.selected_pattern.remove(chosen)
                     if len(self.selected_pattern) == 0:
+                        self.clearAction()
                         return False
 
     # Return True if unobserved cells above agent
@@ -94,9 +105,9 @@ class Controller:
 
 
         #Check upwards until unvisited element or boundary
-        for y_observing in range(y_pos, self.body.env.y_upper):
+        for y_observing in range(y_pos, self.body.env.y_lower, -1):
             for x_observing in range(x_low, x_high):
-                if not self.visited[x_observing][y_observing]:
+                if self.visited[x_observing][y_observing] == 0:
                     return True
         return False
 
@@ -118,9 +129,9 @@ class Controller:
             x_high = self.body.env.x_upper
 
         # Check downwards until unvisited element or boundary
-        for y_observing in range(y_pos, self.body.env.y_upper, -1):
+        for y_observing in range(y_pos, self.body.env.y_upper):
             for x_observing in range(x_low, x_high):
-                if not self.visited[x_observing][y_observing]:
+                if self.visited[x_observing][y_observing] == 0:
                     return True
         return False
 
@@ -144,7 +155,7 @@ class Controller:
         #Check left until unvisited element or boundary
         for x_observing in range(x_pos, self.body.env.x_lower, -1):
             for y_observing in range(y_low, y_high):
-                if not self.visited[x_observing][y_observing]:
+                if self.visited[x_observing][y_observing] == 0:
                     return True
         return False
 
@@ -166,9 +177,9 @@ class Controller:
             y_high = self.body.env.y_upper
 
         # Check right until unvisited element or boundary
-        for x_observing in range(x_pos, self.body.env.x_lower):
+        for x_observing in range(x_pos, self.body.env.x_upper):
             for y_observing in range(y_low, y_high):
-                if not self.visited[x_observing][y_observing]:
+                if self.visited[x_observing][y_observing] == 0:
                     return True
         return False
 
@@ -184,13 +195,13 @@ class Controller:
                 y_test = y + j
 
                 #Ensure coordinates are within bounds
-                x_bounded = self.body.env.x_lower <= x_test and x_test < self.body.env.x_upper
-                y_bounded = self.body.env.y_lower <= y_test and y_test < self.body.env.y_upper
-
+                x_bounded = self.body.env.x_lower <= x_test and x_test <= self.body.env.x_upper
+                y_bounded = self.body.env.y_lower <= y_test and y_test <= self.body.env.y_upper
+                #print("At:({0}, {1}), Checking: ({2}, {3}), In Bounds:({4}, {5})".format(x, y, x_test, y_test, x_bounded, y_bounded))
                 # Mark visited if already visited, or if Euclidean distance less than/equal to 10
                 if x_bounded and y_bounded:
                     if not self.visited[x_test][y_test]:
-                        euclid_dist = np.sqrt((x_test-x)**2 + (y_test-y)**2)
+                        euclid_dist = round(np.sqrt((x_test-x)**2 + (y_test-y)**2))
                         self.visited[x_test][y_test] = int (euclid_dist <= 10)
 
         #Get list of all elements around body
@@ -237,9 +248,19 @@ class CompetitiveController(Controller):
         if self.perceiveRight():
             self.setAction("seek", "right")
 
+        self.setWaypoint()
+
+
+    def setWaypoint(self):
+        #Check if waypoint reached
+        if self.memory["waypoint"] == self.getPosition():
+            pass
+
+        else: #Not there yet, keep going
+            return
+
 
     def prepareEvadeAgents(self):
-        print("I've got you in my sights!")
         # TODO; Establish comms, decide where to go
         # Temporarily just holding position;
         self.setAction("evade", "steady")
@@ -254,7 +275,7 @@ class CompetitiveController(Controller):
         pass
 
     def runTurn(self):
-        print("{0} agent running turn".format(self.faction))
+
         action_report = {"action_performed":"", "action_result":"", "collected_target":False}
         #Do the stuff!
         visible = self.perceiveRadar()

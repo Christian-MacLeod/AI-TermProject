@@ -25,10 +25,11 @@ class GameMaster(threading.Thread):
 
 
     def run(self):
+        print("Iteration {0}: Beginning {1} type game!".format(self.iteration, self.scenario))
         self.beginGame(self.scenario)
 
     def beginGame(self, scenario):
-        factions = {"red", "blue", "yellow", "green", "purple"}
+        factions = {"red"}#, "blue", "yellow", "green", "purple"}
 
         #Create a game object, and start the loop
         if scenario == 1:
@@ -43,7 +44,7 @@ class GameMaster(threading.Thread):
         self.gameLoop()
 
     def finishGame(self):
-
+        print("Iteration {0}: Finished {1} type game!".format(self.iteration, self.scenario))
         #Compile agent stats into required CSV lines
         lines = []
         for stat_sheet in self.game.agents:
@@ -76,10 +77,10 @@ class GameMaster(threading.Thread):
 
             #TODO: Replace with proper interface system
             steps += 1
-            if steps % 10 == 0:
+            if steps % 10 == 0 and self.iteration == 0:
                 Ui.Interface.drawMaps(self.game.agents)
-                if input("Next 10 turns? (n)") == "n":
-                    break
+                #if input("Next 10 turns? (n)") == "n":
+                #    break
 
             #Check for a win, leave the loop if satisfied
             if game_won:
@@ -101,7 +102,7 @@ class Game:
         for faction in factions:
             #With 6 bodies each
             faction_bodies = []
-            while len(faction_bodies) <= 6:
+            while len(faction_bodies) < 6:
                 #Randomly generate a map coordinate, and create a body at that location
                 x_coord = Rnd.randrange(self.field.x_lower, self.field.x_upper)
                 y_coord = Rnd.randrange(self.field.y_lower, self.field.y_upper)

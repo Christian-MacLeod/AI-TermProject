@@ -20,13 +20,17 @@ class Body:
 
         #Increment appropriate axis
         if direction == "up":
-            new_y += 1
-        elif direction == "down":
             new_y -= 1
+            print("Trying to move up to ({0}, {1})".format(new_x, new_y))
+        elif direction == "down":
+            new_y += 1
+            print("Trying to move down to ({0}, {1})".format(new_x, new_y))
         elif direction == "left":
             new_x -= 1
+            print("Trying to move left to ({0}, {1})".format(new_x, new_y))
         elif direction == "right":
             new_x += 1
+            print("Trying to move right to ({0}, {1})".format(new_x, new_y))
 
         #Set new position if valid
         if self.env.validPosition(new_x, new_y):
