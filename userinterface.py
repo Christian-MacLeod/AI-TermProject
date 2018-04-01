@@ -11,6 +11,7 @@ class Interface:
         self.agents = game.agents
         self.targets = game.targets
 
+
     @staticmethod
     def drawMaps(stat_sheet):
         for sheet in stat_sheet:
@@ -21,7 +22,7 @@ class Interface:
             for x in range(len(controller.visited)):
                 for y in range(len(controller.visited[x])):
                     loc_map.putpixel((x,y), controller.visited[x][y])
-            print(controller.getPosition())
+            #print(controller.getPosition())
             loc_map.putpixel(controller.getPosition(), 0)
             #loc_map.putdata(controller.visited)
             #loc_map = Image.fromarray(controller["controller"].visited.astype(bool), "1")

@@ -1,4 +1,5 @@
 import math
+import numpy as np
 class Environment:
 
     #Create new environment with the given bounds
@@ -37,8 +38,8 @@ class Environment:
         #Euclidean distance: distance^2 = xdiff^2 + ydiff^2
         for agent in self.agents:
             #If agent not at scan position AND Euclidean distance less than/equal to 10
-            if (agent.x != x and agent.y != y) and round(math.sqrt( (x-agent.x)**2 + (y-agent.y)**2 )) <= 10:
-                if not (agent.controller.getType() == "target" and not agent.controller.collected):
+            if math.floor(np.sqrt( (x-agent.x)**2 + (y-agent.y)**2 )) <= 10:
+                if (agent.controller.getType() == "target" and not agent.controller.collected) or (agent.x != x and agent.y != y and agent.controller.getType() != "target"):
                     visible.append(agent)
 
         return visible

@@ -55,7 +55,7 @@ class GameMaster(threading.Thread):
             min_happiness = numpy.min(happiness)
             competitiveness = (happiness[-1]-min_happiness)/(max_happiness-min_happiness)
 
-            line = "{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10}".format(self.scenario, self.iteration, factions.index(stat_sheet["faction"]),
+            line = "{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10}\n".format(self.scenario, self.iteration, factions.index(stat_sheet["faction"]),
                                                                          stat_sheet["collected_targets"], stat_sheet["steps_taken"],
                                                                          happiness[-1], max_happiness,
                                                                          min_happiness, numpy.average(happiness),
@@ -70,15 +70,15 @@ class GameMaster(threading.Thread):
         self.sem.release()
 
     def gameLoop(self):
-        steps = 0
+        #steps = 0
         while True:
             #Run each agent's turn
             game_won = self.game.playTurns()
 
             #TODO: Replace with proper interface system
-            steps += 1
-            if steps % 10 == 0 and self.iteration == 0:
-                Ui.Interface.drawMaps(self.game.agents)
+            #steps += 1
+            #if steps % 10 == 0 and self.iteration == 0:
+                #Ui.Interface.drawMaps(self.game.agents)
                 #if input("Next 10 turns? (n)") == "n":
                 #    break
 
@@ -127,15 +127,15 @@ class Game:
         for agent in self.agents: #For each agent, perform turn and evaluate performance
             turn_report = agent["controller"].runTurn()
             #If agent successfully performed something other than staying still, increment steps
-            if turn_report["action_performed"] != "hold" and turn_report["action_performed"] != "evade_hold" and turn_report["action_result"] == True:
+            if turn_report["action_result"]:
                 agent["steps_taken"] += 1
 
-                #Increment collected_targets if needed
-                if turn_report["collected_target"]:
-                    agent["collected_targets"] += 1
+            #Increment collected_targets if needed
+            if turn_report["collected_target"]:
+                agent["collected_targets"] += 1
 
                 #Recalculate happiness
-                agent["happiness"].append(agent["collected_targets"]/(agent["steps_taken"]+1))
+            agent["happiness"].append(agent["collected_targets"]/(agent["steps_taken"]+1))
 
             #Stop playing if the game is won
             if self.checkWin():

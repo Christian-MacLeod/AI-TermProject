@@ -1,6 +1,6 @@
 import numpy as np
 #import communication
-
+from math import floor
 
 
 class Controller:
@@ -201,7 +201,7 @@ class Controller:
                 # Mark visited if already visited, or if Euclidean distance less than/equal to 10
                 if x_bounded and y_bounded:
                     if not self.visited[x_test][y_test]:
-                        euclid_dist = round(np.sqrt((x_test-x)**2 + (y_test-y)**2))
+                        euclid_dist = floor(np.sqrt((x_test-x)**2 + (y_test-y)**2))
                         self.visited[x_test][y_test] = int (euclid_dist <= 10)
 
         #Get list of all elements around body
@@ -250,13 +250,69 @@ class CompetitiveController(Controller):
 
         self.setWaypoint()
 
+    def goToWaypoint(self):
+
+        #Already there, nothing to do
+        if self.getPosition() == self.memory["waypoint"]:
+            return False
+        else:
+            #Get the difference between the positions
+            x_diff = abs(self.getPosition()[0] - self.memory["waypoint"][0])
+            y_diff = abs(self.getPosition()[1] - self.memory["waypoint"][1])
+
+            result = False
+            #Move in the direction with the most ground to travel
+            if x_diff > y_diff:
+                if self.getPosition()[0] > self.memory["waypoint"][0]:
+                    result = self.body.move("left")
+                else:
+                    result = self.body.move("right")
+            else:
+                if self.getPosition()[1] > self.memory["waypoint"][1]:
+                    result = self.body.move("up")
+                else:
+                    result = self.body.move("down")
+            return result
+
 
     def setWaypoint(self):
         #Check if waypoint reached
         if self.memory["waypoint"] == self.getPosition():
-            pass
+            x_pos, y_pos = self.getPosition()
+            ##Choose the highest priority task available
+            # Grab something from the list and add it back
+            chosen = self.selected_pattern.pop()
+            self.selected_pattern.add(chosen)
 
+            # Choose the highest priority item still in the list
+            for pattern in self.selected_pattern:
+                if self.action_patterns[pattern] >= self.action_patterns[chosen]:
+                    chosen = pattern
+
+            #Adjust the coordinates as needed
+            if chosen == "up":
+                y_pos -= 15
+            elif chosen == "down":
+                y_pos += 15
+            elif chosen == "left":
+                x_pos -= 15
+            elif chosen == "right":
+                x_pos += 15
+
+            #Ensure coordinates are in bounds
+            if y_pos > self.body.env.y_upper - 5:
+                y_pos = self.body.env.y_upper - 5
+            if y_pos < self.body.env.y_lower + 5:
+                y_pos = self.body.env.y_lower + 5
+            if x_pos > self.body.env.x_upper - 5:
+                x_pos = self.body.env.x_upper - 5
+            if x_pos < self.body.env.x_lower + 5:
+                x_pos = self.body.env.x_lower + 5
+
+            self.memory["waypoint"] = (x_pos, y_pos)
+            self.clearAction()
         else: #Not there yet, keep going
+            self.clearAction()
             return
 
 
@@ -276,12 +332,12 @@ class CompetitiveController(Controller):
 
     def runTurn(self):
 
-        action_report = {"action_performed":"", "action_result":"", "collected_target":False}
+        action_report = {"action_result":False, "collected_target":False}
         #Do the stuff!
         visible = self.perceiveRadar()
         if len(visible) != 0:
             #Found something
-
+            print("Something on radar!")
             #Check all radar hits
             for entity in visible:
                 if entity.controller.getType() != "target":
@@ -290,10 +346,10 @@ class CompetitiveController(Controller):
                     self.prepareSeekTargets()
                 else:
                     #Found a target
-                    if entity.getFaction() == self.getFaction():
+                    if entity.controller.getFaction() == self.getFaction():
                         #Found my target!
-                        if not entity.perceiveCollected():
-                            entity.collect()
+                        if not entity.controller.perceiveCollected():
+                            entity.controller.collect()
                             action_report["collected_target"] = True
                     else:
                         #Found someone else's target, remember for later
@@ -303,8 +359,7 @@ class CompetitiveController(Controller):
 
 
         #Execute the action and finalize the report
-        action_report["action_performed"] = self.selected_action
-        action_report["action_result"] = self.executeAction()
+        action_report["action_result"] = self.goToWaypoint()#.executeAction()
         return action_report
 
 
@@ -323,4 +378,5 @@ class TargetController(Controller):
 
     def collect(self):
         self.collected = True
+        print("Target collected!")
         return True
