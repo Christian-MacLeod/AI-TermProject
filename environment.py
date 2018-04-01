@@ -1,4 +1,5 @@
 import math
+import numpy as np
 class Environment:
 
     #Create new environment with the given bounds
@@ -23,7 +24,7 @@ class Environment:
     #Check if given position is unoccupied and within bounds
     def validPosition(self, x, y):
         for agent in self.agents: #Check unoccupied
-            if agent.x == x and agent.y == y:
+            if agent.x == x and agent.y == y and agent.controller.getType() != "target":
                 return False
 
         if self.x_upper >= x >= self.x_lower: #Check in bounds
@@ -37,8 +38,8 @@ class Environment:
         #Euclidean distance: distance^2 = xdiff^2 + ydiff^2
         for agent in self.agents:
             #If agent not at scan position AND Euclidean distance less than/equal to 10
-            if (agent.x != x and agent.y != y) and math.sqrt( (x-agent.x)**2 + (y-agent.y)**2 ) <= 10:
-                if not (agent.getType() == "target" and not agent.collected):
+            if math.floor(np.sqrt( (x-agent.x)**2 + (y-agent.y)**2 )) <= 10:
+                if (agent.controller.getType() == "target" and not agent.controller.collected) or (agent.x != x and agent.y != y and agent.controller.getType() != "target"):
                     visible.append(agent)
 
         return visible
