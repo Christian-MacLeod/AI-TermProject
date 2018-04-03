@@ -29,7 +29,7 @@ class GameMaster(threading.Thread):
         self.beginGame(self.scenario)
 
     def beginGame(self, scenario):
-        factions = {"red"}#, "blue", "yellow", "green", "purple"}
+        factions = {"red", "blue", "yellow", "green", "purple"}
 
         #Create a game object, and start the loop
         if scenario == 1:
@@ -131,10 +131,9 @@ class Game:
                 agent["steps_taken"] += 1
 
             #Increment collected_targets if needed
-            if turn_report["collected_target"]:
-                agent["collected_targets"] += 1
+            agent["collected_targets"] += turn_report["collected_target"]
 
-                #Recalculate happiness
+            #Recalculate happiness
             agent["happiness"].append(agent["collected_targets"]/(agent["steps_taken"]+1))
 
             #Stop playing if the game is won

@@ -1,5 +1,6 @@
 import numpy as np
 #import communication
+import random
 from math import floor
 
 
@@ -12,16 +13,16 @@ class Controller:
 
     type = "undefined"
     memory = { "agent_reliability":{"red":0.0, "blue":0.0, "yellow":0.0, "green":0.0, "purple":0.0},
-               "found_targets":{"red":[], "blue":[], "yellow":[], "green":[], "purple":[]},
-               "waypoint":(0,0)
+               "known_targets":{"red":[], "blue":[], "yellow":[], "green":[], "purple":[]},
+               "waypoint":(0,0), "targets_found":0
              }
-    def __init__(self, faction, body):
+    def __init__(self, faction, body, broadcast_link):
         self.body = body
         self.visited = [ [0 for y in range(0, self.body.env.y_upper - self.body.env.y_lower + 1)] for x in range(0, self.body.env.x_upper - self.body.env.x_lower + 1) ]
         self.faction = faction
         self.body.registerController(self)
         self.memory["waypoint"] = self.getPosition()
-        #self.private_channel = communication.PrivateChannel()
+        self.broadcast_link = broadcast_link
 
 
     def setAction(self, action_class, action_code):
@@ -236,8 +237,6 @@ class CompetitiveController(Controller):
         return None
 
     def prepareSeekTargets(self):
-        self.prepareGatherKnownTarget()
-
         # Check in all directions, move towards highest priority direction with unobserved cells
         if self.perceiveAbove():
             self.setAction("seek", "up")
@@ -249,6 +248,7 @@ class CompetitiveController(Controller):
             self.setAction("seek", "right")
 
         self.setWaypoint()
+
 
     def goToWaypoint(self):
 
@@ -316,47 +316,69 @@ class CompetitiveController(Controller):
             return
 
 
-    def prepareEvadeAgents(self):
-        # TODO; Establish comms, decide where to go
-        # Temporarily just holding position;
-        self.setAction("evade", "steady")
+    def prepareEvadeAgents(self, dodge):
+        if len(dodge) == 0:
+            return
+
+        dodge_x, dodge_y = dodge[0].getPosition()
+        cur_x, cur_y = self.getPosition()
+        new_x, new_y = self.getPosition()
+
+
+        #if abs(dodge_x-cur_x) >= abs(dodge_y-cur_y):
+        new_x += (cur_x-dodge_x)/3 + random.randint(-1,1)
+        #else:
+        new_y += (cur_y-dodge_y)/3 + random.randint(-1,1)
+
+        self.memory["waypoint"] = (new_x, new_y)
+
 
 
     def prepareGatherKnownTarget(self):
-        pass
+        #If target found and waypoint reached
+        if len(self.memory["known_targets"][self.getFaction()]) != 0 and self.memory["waypoint"] == self.getPosition():
+            self.memory["waypoint"] = (self.memory["known_targets"][0][0], self.memory["known_targets"][0][1])
 
 
     def memorizeObservedTarget(self, entity_pos, entity_faction):
-        #self.memory["known_targets"][entity.getFaction].append((entity_x, entity_y, self.getFaction()))
+        self.memory["known_targets"][entity_faction].append((entity_pos[0], entity_pos[1], self.getFaction()))
         pass
 
     def runTurn(self):
 
-        action_report = {"action_result":False, "collected_target":False}
+        action_report = {"action_result":False, "collected_target":0}
         #Do the stuff!
+        dodge = []
         visible = self.perceiveRadar()
         if len(visible) != 0:
             #Found something
             print("Something on radar!")
+
             #Check all radar hits
             for entity in visible:
                 if entity.controller.getType() != "target":
-                    #Other agent, Evade!
-                    #self.prepareEvadeAgents() TODO: Implement the evade functions
-                    self.prepareSeekTargets()
+                    #Other agent, dodge it
+                    dodge.append(entity)
                 else:
                     #Found a target
                     if entity.controller.getFaction() == self.getFaction():
                         #Found my target!
                         if not entity.controller.perceiveCollected():
                             entity.controller.collect()
-                            action_report["collected_target"] = True
+                            self.memory["targets_found"] += 1
+                            action_report["collected_target"] += 1
+                            if len(self.memory["known_targets"][self.getFaction()]) != 0:
+                                try:
+                                    self.memory["known_targets"][self.getFaction()].remove(entity.getPosition())
+                                except ValueError:
+                                    pass
                     else:
                         #Found someone else's target, remember for later
                         self.memorizeObservedTarget(entity.getPosition(), entity.getFaction())
 
+        self.prepareGatherKnownTarget() #Collect found target
         self.prepareSeekTargets() #Look for targets
-
+        self.prepareEvadeAgents(dodge) #Evade other agents
 
         #Execute the action and finalize the report
         action_report["action_result"] = self.goToWaypoint()#.executeAction()
