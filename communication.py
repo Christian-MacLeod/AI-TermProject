@@ -1,6 +1,5 @@
-@abs
 class CommsLink:
-
+    messageDest = None
     def send(self, message):
         self.messageDest(message)
 
@@ -13,8 +12,11 @@ class PrivateLink(CommsLink):
 
 class PublicLink(CommsLink):
 
-    def __init__(self, connected_links):
-        self.connected_channels = connected_links
+    def __init__(self):
+        self.connected_channels = []
+
+    def registerChannel(self, private_link):
+        self.connected_channels.append(private_link)
 
     def messageDest(self, message):
         for channel in self.connected_channels:

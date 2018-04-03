@@ -1,5 +1,6 @@
 import threading
 import gamemaster
+import userinterface
 
 class GrandMaster:
 
@@ -7,6 +8,8 @@ class GrandMaster:
         self.log_file = "C:/Users/100560504/Downloads/_Artificial Intelligence/G21_1.csv"
         self.results_file = "C:/Users/100560504/Downloads/_Artificial Intelligence/G21_2.csv"
         self.thread_count_sem = threading.BoundedSemaphore(thread_limit)
+        self.ui = userinterface.Interface()
+        self.ui_lock = threading.BoundedSemaphore(1)
         return
 
     def writeToLog(self, lines):
@@ -35,16 +38,25 @@ class GrandMaster:
         for i in range(amount):
             self.thread_count_sem.acquire()
             game = gamemaster.GameMaster("competition", self.thread_count_sem, i, self.writeToLog)
-            game.start()
+            if self.ui_lock.acquire(False):
+                game.registerUI(self.ui, self.ui_lock.release)
+            game.beginGame(1)
+            #game.start()
 
     def spawnCollaborativeGames(self, amount):
         for i in range(amount):
             self.thread_count_sem.acquire()
             game = gamemaster.GameMaster("collaboration", self.thread_count_sem, i, self.writeToLog)
-            game.start()
+            if self.ui_lock.acquire(False):
+                game.registerUI(self.ui, self.ui_lock.release)
+            game.beginGame(2)
+            #game.start()
 
     def spawnCompassionateGames(self, amount):
         for i in range(amount):
             self.thread_count_sem.acquire()
             game = gamemaster.GameMaster("compassion", self.thread_count_sem, i, self.writeToLog)
-            game.start()
+            if self.ui_lock.acquire(False):
+                game.registerUI(self.ui, self.ui_lock.release)
+            game.beginGame(3)
+            #game.start()

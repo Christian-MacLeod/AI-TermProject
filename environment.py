@@ -24,7 +24,7 @@ class Environment:
     #Check if given position is unoccupied and within bounds
     def validPosition(self, x, y):
         for agent in self.agents: #Check unoccupied
-            if agent.x == x and agent.y == y and agent.controller.getType() != "target":
+            if agent.x == x and agent.y == y and (agent.controller is None or agent.controller.getType() != "target"):
                 return False
 
         if self.x_upper >= x >= self.x_lower: #Check in bounds

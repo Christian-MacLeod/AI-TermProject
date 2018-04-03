@@ -8,21 +8,23 @@ class Controller:
     action_classes = {"move":1, "evade":3, "seek":2, "hold":0}
     action_patterns = {"up":4, "right":3, "down":2, "left":1, "steady":0}
 
-    selected_pattern = { "steady" }
-    selected_action = "hold"
+
 
     type = "undefined"
-    memory = { "agent_reliability":{"red":0.0, "blue":0.0, "yellow":0.0, "green":0.0, "purple":0.0},
-               "known_targets":{"red":[], "blue":[], "yellow":[], "green":[], "purple":[]},
-               "waypoint":(0,0), "targets_found":0
-             }
+
     def __init__(self, faction, body, broadcast_link):
+        self.memory = {"agent_reliability": {"red": 0.0, "blue": 0.0, "yellow": 0.0, "green": 0.0, "purple": 0.0},
+                       "known_targets": {"red": [], "blue": [], "yellow": [], "green": [], "purple": []},
+                       "waypoint": (0, 0), "targets_found": 0
+                       }
         self.body = body
         self.visited = [ [0 for y in range(0, self.body.env.y_upper - self.body.env.y_lower + 1)] for x in range(0, self.body.env.x_upper - self.body.env.x_lower + 1) ]
         self.faction = faction
         self.body.registerController(self)
         self.memory["waypoint"] = self.getPosition()
         self.broadcast_link = broadcast_link
+        self.selected_pattern = {"steady"}
+        self.selected_action = "hold"
 
 
     def setAction(self, action_class, action_code):
@@ -209,7 +211,7 @@ class Controller:
         return self.body.scan()
 
     def perceiveMessage(self, message):
-        return None
+        return
 
     def runTurn(self):
         return None
@@ -320,7 +322,7 @@ class CompetitiveController(Controller):
         if len(dodge) == 0:
             return
 
-        dodge_x, dodge_y = dodge[0].getPosition()
+        dodge_x, dodge_y = dodge[0].controller.getPosition()
         cur_x, cur_y = self.getPosition()
         new_x, new_y = self.getPosition()
 
@@ -333,11 +335,14 @@ class CompetitiveController(Controller):
         self.memory["waypoint"] = (new_x, new_y)
 
 
-
     def prepareGatherKnownTarget(self):
         #If target found and waypoint reached
         if len(self.memory["known_targets"][self.getFaction()]) != 0 and self.memory["waypoint"] == self.getPosition():
-            self.memory["waypoint"] = (self.memory["known_targets"][0][0], self.memory["known_targets"][0][1])
+            print(self.memory["known_targets"][self.getFaction()])
+            print(self.memory["known_targets"])
+            print(self.getFaction())
+            x, y, found_by = self.memory["known_targets"][self.getFaction()][0]
+            self.memory["waypoint"] = (x, y)
 
 
     def memorizeObservedTarget(self, entity_pos, entity_faction):
@@ -369,12 +374,12 @@ class CompetitiveController(Controller):
                             action_report["collected_target"] += 1
                             if len(self.memory["known_targets"][self.getFaction()]) != 0:
                                 try:
-                                    self.memory["known_targets"][self.getFaction()].remove(entity.getPosition())
+                                    self.memory["known_targets"][self.getFaction()].remove(entity.controller.getPosition())
                                 except ValueError:
                                     pass
                     else:
                         #Found someone else's target, remember for later
-                        self.memorizeObservedTarget(entity.getPosition(), entity.getFaction())
+                        self.memorizeObservedTarget(entity.controller.getPosition(), entity.controller.getFaction())
 
         self.prepareGatherKnownTarget() #Collect found target
         self.prepareSeekTargets() #Look for targets

@@ -1,15 +1,55 @@
 import tkinter as Tk
 from PIL import Image
+from PIL import ImageTk as pilImageTk
+from PIL import ImageColor
+import numpy
 
 class Interface:
+    #Aquired from memory snapshot at first step
+    ten_radius_circle = Image.fromarray(numpy.uint8(255*numpy.array([[0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,0,0,0,0,0,  0],
+        [0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,1,1,0,0,0,  0],
+        [0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,  0],
+        [0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,  0],
+        [0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,  0],
+        [0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,  0],
+        [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+        [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+        [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+        [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+        [1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1],
+        [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+        [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+        [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+        [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+        [0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,  0],
+        [0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,  0],
+        [0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,  0],
+        [0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,  0],
+        [0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,1,1,0,0,0,  0],
+        [0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,0,0,0,0,0,  0]])))
 
     def __init__(self):
         self.agents = []
         self.targets = []
+        self.root_ui = Tk.Tk()
+        self.current_frame = pilImageTk.PhotoImage(Image.new("RGBA", (100, 100), 0).resize((400,400)))
+        self.image_holder = Tk.Label(self.root_ui, image=self.current_frame)
+        self.image_holder.pack()
+        self.root_ui.update_idletasks()
+        self.root_ui.update()
+        #self.ten_radius_circle.show()
+        #self.new_ten_rad.show()
 
-    def registerGame(self, game):
+        #self.map.paste(Image.new("RGBA",(21,21), 0xffffff), (-10,-10), self.ten_radius_circle)
+        #self.map.load()
+        #self.map.show()
+        #self.ten_radius_circle.show() ImageColor.getrgb("Blue")
+        #self.ten_radius_circle_1bit.show()
+
+    def registerGame(self, game, title):
         self.agents = game.agents
         self.targets = game.targets
+        self.root_ui.title = title
 
 
     @staticmethod
@@ -30,7 +70,22 @@ class Interface:
             #loc_map.putpixel((0,0),0x1)
             loc_map.load()
             loc_map.show(controller.faction)
+
+
             return
 
-    def drawMap(self):
-        pass
+    def updateDisplay(self):
+        frame = Image.new("RGBA", (100,100), 0)
+        for agent in self.agents:
+            pos_x, pos_y = agent["controller"].getPosition()
+            frame.paste(agent["controller"].getFaction(), (pos_x - 10, pos_y - 10), self.ten_radius_circle)
+        for target in self.targets:
+            frame.putpixel(target.getPosition(), ImageColor.getrgb(target.getFaction()))
+        #self.current_frame = pilImageTk.PhotoImage(frame)
+        x = None
+        self.current_frame.paste(frame.resize((400,400)))
+        #self.image_holder = Tk.Label(self.root_ui, image=self.current_frame)
+        #self.image_holder.pack()
+        self.root_ui.update_idletasks()
+        self.root_ui.update()
+

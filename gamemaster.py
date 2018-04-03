@@ -3,6 +3,7 @@ import body as Bod
 import controller as Con
 import random as Rnd
 import userinterface as Ui
+import communication as Comm
 import threading
 import numpy
 
@@ -10,7 +11,8 @@ class GameMaster(threading.Thread):
     def __init__(self, scenario, sem, iteration, logWriter):
         threading.Thread.__init__(self)
         self.game = None
-        self.ui = Ui.Interface()
+        self.ui = None
+        self.releaseUI = None
         self.scenario = scenario
         self.iteration = iteration
         self.sem = sem
@@ -23,6 +25,10 @@ class GameMaster(threading.Thread):
         elif scenario == "compassion":
             self.scenario = 3
 
+
+    def registerUI(self, ui, releaseUI):
+        self.ui = ui
+        self.releaseUI = releaseUI
 
     def run(self):
         print("Iteration {0}: Beginning {1} type game!".format(self.iteration, self.scenario))
@@ -40,7 +46,8 @@ class GameMaster(threading.Thread):
             return
         else:
             return
-
+        if self.ui is not None:
+            self.ui.registerGame(self.game, "Iteration {0}, Game Type {1}".format(self.iteration, self.scenario))
         self.gameLoop()
 
     def finishGame(self):
@@ -65,22 +72,22 @@ class GameMaster(threading.Thread):
         #Write results to log file
         self.writeLog(lines)
 
-
         #Release the thread
+        if self.releaseUI is not None:
+            self.releaseUI()
         self.sem.release()
 
     def gameLoop(self):
-        #steps = 0
         while True:
             #Run each agent's turn
             game_won = self.game.playTurns()
 
-            #TODO: Replace with proper interface system
-            #steps += 1
-            #if steps % 10 == 0 and self.iteration == 0:
-                #Ui.Interface.drawMaps(self.game.agents)
-                #if input("Next 10 turns? (n)") == "n":
-                #    break
+            #Draw to display if allowed
+            if self.ui is not None:
+                try:
+                    self.ui.updateDisplay()
+                except RuntimeError:
+                    pass
 
             #Check for a win, leave the loop if satisfied
             if game_won:
@@ -97,7 +104,8 @@ class Game:
         self.field = Env.Environment(bounds[0], 0, bounds[1], 0)
         self.targets = []
         self.agents = []
-
+        self.private_links = {}
+        self.broadcast_channel = Comm.PublicLink()
         #Create factions
         for faction in factions:
             #With 6 bodies each
@@ -114,11 +122,12 @@ class Game:
 
             #Insert target controllers
             for i in range(1,len(faction_bodies)):
-                self.targets.append(Con.TargetController(faction, faction_bodies[i]))
+                self.targets.append(Con.TargetController(faction, faction_bodies[i], None))
 
             #Insert agent controller
-            agent_stats = {"faction":faction, "controller":self.createAgent(faction, faction_bodies[0]),
+            agent_stats = {"faction":faction, "controller":self.createAgent(faction, faction_bodies[0], self.broadcast_channel.send),
                            "collected_targets":0, "steps_taken":0, "happiness":[]}
+            self.private_links[faction] = Comm.PrivateLink(agent_stats["controller"].perceiveMessage)
             self.agents.append(agent_stats)
         return
 
@@ -142,7 +151,7 @@ class Game:
         return False
 
 
-    def createAgent(self, faction, body):
+    def createAgent(self, faction, body, public_comms):
         return None
 
     def checkWin(self):
@@ -151,8 +160,8 @@ class Game:
 #Create a game with competitive AI
 class Competition(Game):
 
-    def createAgent(self, faction, body):
-        return Con.CompetitiveController(faction, body)
+    def createAgent(self, faction, body, public_comms):
+        return Con.CompetitiveController(faction, body, public_comms)
 
     def checkWin(self):
         for stat_sheet in self.agents:
