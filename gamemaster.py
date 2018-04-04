@@ -9,8 +9,9 @@ import numpy
 
 class GameMaster(threading.Thread):
     factions = ["red", "blue", "yellow", "green", "orange"]
-    def __init__(self, scenario, sem, iteration, logWriter):
+    def __init__(self, scenario, sem, iteration, logWriter, dimensions=(99,99)):
         threading.Thread.__init__(self)
+        self.dimensions = dimensions
         self.game = None
         self.ui = None
         self.releaseUI = None
@@ -41,11 +42,11 @@ class GameMaster(threading.Thread):
 
         #Create a game object, and start the loop
         if scenario == 1:
-            self.game = Competition([99, 99], self.factions)
+            self.game = Competition(self.dimensions, self.factions)
         elif scenario == 2:
-            self.game = Collaboration([99, 99], self.factions)
+            self.game = Collaboration(self.dimensions, self.factions)
         elif scenario == 3:
-            self.game = Compassion([99, 99], self.factions)
+            self.game = Compassion(self.dimensions, self.factions)
         else:
             self.release()
             return

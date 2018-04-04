@@ -4,17 +4,18 @@ import userinterface
 
 class GrandMaster:
     steps_remaining = 0
-    def __init__(self, thread_limit):
+    def __init__(self, thread_limit, dimensions=(99,99), scaled=(400,400)):
         self.log_file = "C:/Users/100560504/Downloads/_Artificial Intelligence/G21_1.csv"
         self.results_file = "C:/Users/100560504/Downloads/_Artificial Intelligence/G21_2.csv"
         self.max_threads = thread_limit
         self.thread_count_sem = threading.BoundedSemaphore(thread_limit)
         self.ui_lock = threading.BoundedSemaphore(1)
+        self.dimensions = dimensions
         if self.max_threads != 1:
             self.ui = None
             self.ui_lock.acquire()
-        else:
-            self.ui = userinterface.Interface()
+        else: #Images start at 1, so increase dimensions by 1
+            self.ui = userinterface.Interface((self.dimensions[0]+1, self.dimensions[1]+1), scaled)
         return
 
     def writeToLog(self, lines):
@@ -62,7 +63,7 @@ class GrandMaster:
     def spawnCompetitiveGames(self, amount):
         for i in range(amount):
             self.thread_count_sem.acquire()
-            game = gamemaster.GameMaster("competition", self.thread_count_sem, i, self.writeToLog)
+            game = gamemaster.GameMaster("competition", self.thread_count_sem, i, self.writeToLog, self.dimensions)
             if self.ui_lock.acquire(False):
                 game.registerUI(self.ui, self.ui_lock.release)
 
@@ -74,7 +75,7 @@ class GrandMaster:
     def spawnCollaborativeGames(self, amount):
         for i in range(amount):
             self.thread_count_sem.acquire()
-            game = gamemaster.GameMaster("collaboration", self.thread_count_sem, i, self.writeToLog)
+            game = gamemaster.GameMaster("collaboration", self.thread_count_sem, i, self.writeToLog, self.dimensions)
             if self.ui_lock.acquire(False):
                 game.registerUI(self.ui, self.ui_lock.release)
             if self.max_threads == 1:
@@ -85,7 +86,7 @@ class GrandMaster:
     def spawnCompassionateGames(self, amount):
         for i in range(amount):
             self.thread_count_sem.acquire()
-            game = gamemaster.GameMaster("compassion", self.thread_count_sem, i, self.writeToLog)
+            game = gamemaster.GameMaster("compassion", self.thread_count_sem, i, self.writeToLog, self.dimensions)
             if self.ui_lock.acquire(False):
                 game.registerUI(self.ui, self.ui_lock.release)
             if self.max_threads == 1:
