@@ -45,8 +45,7 @@ class GameMaster(threading.Thread):
         elif scenario == 2:
             self.game = Collaboration([99, 99], self.factions)
         elif scenario == 3:
-            self.release()
-            return
+            self.game = Compassion([99, 99], self.factions)
         else:
             self.release()
             return
@@ -192,3 +191,16 @@ class Collaboration(Game):
                 return False
         print("All targets found!")
         return True
+
+#Create a game with compassionate AI
+class Compassion(Game):
+
+    def createAgent(self, faction, body, public_comms):
+        return Con.CompassionateController(faction, body, public_comms)
+
+    def checkWin(self):
+        for stat_sheet in self.agents:
+            if stat_sheet["collected_targets"] == 5:
+                print("{0} agent won!".format(stat_sheet["controller"].getFaction()))
+                return True
+        return False

@@ -32,7 +32,23 @@ class GrandMaster:
         self.compileResults()
 
     def compileResults(self):
-        pass
+        sum_k = [0.0, 0.0, 0.0]
+        sum_i = [0.0, 0.0, 0.0]
+        count = [0.0, 0.0, 0.0]
+        with open(self.log_file, "r") as log:
+            for cnt, line in enumerate(log):
+                segments = line.split(",")
+                sum_k[int(segments[0])-1] += float(segments[10])
+                sum_i[int(segments[0])-1] += float(segments[8])
+                count[int(segments[0])-1] += 1
+
+        lines = []
+        for i in range(len(count)):
+            lines.append("{0},{1},{2}\n".format(i, sum_i[i]/count[i], sum_k[i]/count[i]))
+
+        with open(self.results_file, "w") as results:
+            results.writelines(lines)
+
 
     def spawnCompetitiveGames(self, amount):
         for i in range(amount):

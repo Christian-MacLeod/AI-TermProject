@@ -318,14 +318,14 @@ class Controller:
         new_y += cur_y - dodge_y + random.randint(-3,3)
 
         # Bound the coordinates
-        if new_x < self.body.env.x_lower + 5:
-            new_x = self.body.env.x_lower + 5
-        elif new_x > self.body.env.x_upper - 5:
-            new_x = self.body.env.x_upper - 5
-        if new_y < self.body.env.y_lower + 5:
-            new_y = self.body.env.y_lower + 5
-        elif new_y > self.body.env.y_upper - 5:
-            new_y = self.body.env.y_upper - 5
+        if new_x < self.body.env.x_lower:
+            new_x = self.body.env.x_lower
+        elif new_x > self.body.env.x_upper:
+            new_x = self.body.env.x_upper
+        if new_y < self.body.env.y_lower:
+            new_y = self.body.env.y_lower
+        elif new_y > self.body.env.y_upper:
+            new_y = self.body.env.y_upper
 
         self.memory["waypoint"] = (new_x, new_y)
 
@@ -448,7 +448,57 @@ class CollaborativeController(Controller):
 
 
 class CompassionateController(Controller):
-    pass
+    type = "compassionate_agent"
+
+    def perceiveMessage(self, message):
+        #Do the things, perceive the message
+        if message["type"] == "found_targets":
+            for target in message["targets"]:
+                self.memorizeObservedTarget(target["position"], target["faction"], message["sender"], target["collected"])
+        return None
+
+    def prepareTurnReport(self, visible_targets):
+        message = {"type":"found_targets", "targets":visible_targets, "sender":self.getFaction()}
+        self.broadcast_link(message)
+
+    def runTurn(self):
+
+        action_report = {"action_result":False, "collected_target":0}
+        dodge = []
+        notify = []
+        visible = self.perceiveRadar()
+
+        #If we found something
+        if len(visible) != 0:
+            #Check all radar hits
+            for entity in visible:
+                if entity.controller.getType() != "target":
+                    #Other agent, dodge it
+                    dodge.append(entity)
+                else:
+                    #Found a target
+                    collected = entity.controller.perceiveCollected()
+
+                    # Found my target!
+                    if entity.controller.getFaction() == self.getFaction():
+                        if not collected:
+                            entity.controller.collect()
+                            collected = True
+                            self.memory["targets_found"] += 1
+                            action_report["collected_target"] += 1
+
+                    #Remember for later
+                    self.memorizeObservedTarget(entity.controller.getPosition(), entity.controller.getFaction(), self.getFaction(), collected)
+                    notify.append({"position":entity.controller.getPosition(), "faction":entity.controller.getFaction(), "collected":collected})
+
+        self.prepareTurnReport(notify) #Report findings to other agents
+        self.prepareGatherKnownTarget() #Collect found target
+        self.prepareSeekTargets() #Look for new targets
+        self.prepareEvadeAgents(dodge) #Evade other agents
+
+        #Execute the action and finalize the report
+        action_report["action_result"] = self.goToWaypoint()
+        return action_report
 
 
 
@@ -461,5 +511,3 @@ class TargetController(Controller):
 
     def collect(self):
         self.collected = True
-
-        return True
