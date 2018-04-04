@@ -8,6 +8,7 @@ import threading
 import numpy
 
 class GameMaster(threading.Thread):
+    factions = ["red", "blue", "yellow", "green", "orange"]
     def __init__(self, scenario, sem, iteration, logWriter):
         threading.Thread.__init__(self)
         self.game = None
@@ -31,20 +32,23 @@ class GameMaster(threading.Thread):
         self.releaseUI = releaseUI
 
     def run(self):
-        print("Iteration {0}: Beginning {1} type game!".format(self.iteration, self.scenario))
+
         self.beginGame(self.scenario)
 
     def beginGame(self, scenario):
-        factions = {"red", "blue", "yellow", "green", "purple"}
+        print("Iteration {0}: Beginning {1} type game!".format(self.iteration, self.scenario))
+
 
         #Create a game object, and start the loop
         if scenario == 1:
-            self.game = Competition([99, 99], factions)
+            self.game = Competition([99, 99], self.factions)
         elif scenario == 2:
-            return
+            self.game = Collaboration([99, 99], self.factions)
         elif scenario == 3:
+            self.release()
             return
         else:
+            self.release()
             return
         if self.ui is not None:
             self.ui.registerGame(self.game, "Iteration {0}, Game Type {1}".format(self.iteration, self.scenario))
@@ -55,14 +59,15 @@ class GameMaster(threading.Thread):
         #Compile agent stats into required CSV lines
         lines = []
         for stat_sheet in self.game.agents:
-            factions = ["red", "blue", "yellow", "green", "purple"]
-
             happiness = stat_sheet["happiness"]
             max_happiness = numpy.max(happiness)
             min_happiness = numpy.min(happiness)
-            competitiveness = (happiness[-1]-min_happiness)/(max_happiness-min_happiness)
+            if max_happiness-min_happiness != 0:
+                competitiveness = (happiness[-1]-min_happiness)/(max_happiness-min_happiness)
+            else:
+                competitiveness = 0
 
-            line = "{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10}\n".format(self.scenario, self.iteration, factions.index(stat_sheet["faction"]),
+            line = "{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10}\n".format(self.scenario, self.iteration, self.factions.index(stat_sheet["faction"]),
                                                                          stat_sheet["collected_targets"], stat_sheet["steps_taken"],
                                                                          happiness[-1], max_happiness,
                                                                          min_happiness, numpy.average(happiness),
@@ -72,7 +77,11 @@ class GameMaster(threading.Thread):
         #Write results to log file
         self.writeLog(lines)
 
-        #Release the thread
+        self.release()
+
+
+    def release(self):
+        # Release the thread
         if self.releaseUI is not None:
             self.releaseUI()
         self.sem.release()
@@ -127,7 +136,8 @@ class Game:
             #Insert agent controller
             agent_stats = {"faction":faction, "controller":self.createAgent(faction, faction_bodies[0], self.broadcast_channel.send),
                            "collected_targets":0, "steps_taken":0, "happiness":[]}
-            self.private_links[faction] = Comm.PrivateLink(agent_stats["controller"].perceiveMessage)
+            self.private_links[faction] = Comm.PrivateLink(agent_stats["controller"].perceiveMessage, faction)
+            self.broadcast_channel.registerChannel(self.private_links[faction])
             self.agents.append(agent_stats)
         return
 
@@ -166,5 +176,19 @@ class Competition(Game):
     def checkWin(self):
         for stat_sheet in self.agents:
             if stat_sheet["collected_targets"] == 5:
+                print("{0} agent won!".format(stat_sheet["controller"].getFaction()))
                 return True
         return False
+
+#Create a game with collaborative AI
+class Collaboration(Game):
+
+    def createAgent(self, faction, body, public_comms):
+        return Con.CollaborativeController(faction, body, public_comms)
+
+    def checkWin(self):
+        for stat_sheet in self.agents:
+            if stat_sheet["collected_targets"] != 5:
+                return False
+        print("All targets found!")
+        return True

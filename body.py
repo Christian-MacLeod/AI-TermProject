@@ -38,10 +38,9 @@ class Body:
             self.y = new_y
             return True
         else:
-            print("Can't move!")
             return False
 
     #Ask the environment for a list of elements visible to the Agent
-    def scan(self):
-        return self.env.elementsAround(self.x, self.y)
+    def scan(self, faction):
+        return self.env.elementsAround(self.x, self.y, faction=faction)
 

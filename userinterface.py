@@ -75,14 +75,18 @@ class Interface:
             return
 
     def updateDisplay(self):
-        frame = Image.new("RGBA", (100,100), 0)
+        frame = Image.new("RGBA", (100,100), ImageColor.getrgb("black"))
         for agent in self.agents:
             pos_x, pos_y = agent["controller"].getPosition()
             frame.paste(agent["controller"].getFaction(), (pos_x - 10, pos_y - 10), self.ten_radius_circle)
         for target in self.targets:
-            frame.putpixel(target.getPosition(), ImageColor.getrgb(target.getFaction()))
+            if target.perceiveCollected():
+                colour = "grey"
+            else:
+                colour = target.getFaction()
+
+            frame.putpixel(target.getPosition(), ImageColor.getrgb(colour))
         #self.current_frame = pilImageTk.PhotoImage(frame)
-        x = None
         self.current_frame.paste(frame.resize((400,400)))
         #self.image_holder = Tk.Label(self.root_ui, image=self.current_frame)
         #self.image_holder.pack()

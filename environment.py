@@ -33,13 +33,13 @@ class Environment:
         return False
 
     #Get a list of elements visible from the given coordinates
-    def elementsAround(self, x, y):
+    def elementsAround(self, x, y, faction = None):
         visible = []
         #Euclidean distance: distance^2 = xdiff^2 + ydiff^2
         for agent in self.agents:
             #If agent not at scan position AND Euclidean distance less than/equal to 10
             if math.floor(np.sqrt( (x-agent.x)**2 + (y-agent.y)**2 )) <= 10:
-                if (agent.controller.getType() == "target" and not agent.controller.collected) or (agent.x != x and agent.y != y and agent.controller.getType() != "target"):
+                if (agent.controller.getType() == "target" and not agent.controller.collected) or (faction != None and faction != agent.controller.getFaction()) or (agent.x != x and agent.y != y and agent.controller.getType() != "target"):
                     visible.append(agent)
 
         return visible

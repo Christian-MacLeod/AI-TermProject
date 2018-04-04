@@ -6,8 +6,9 @@ class CommsLink:
 
 class PrivateLink(CommsLink):
 
-    def __init__(self, messageDest):
+    def __init__(self, messageDest, faction):
         self.messageDest = messageDest
+        self.faction = faction
 
 
 class PublicLink(CommsLink):
@@ -20,4 +21,5 @@ class PublicLink(CommsLink):
 
     def messageDest(self, message):
         for channel in self.connected_channels:
-            channel.messageDest(message)
+            if channel.faction != message["sender"]:
+                channel.messageDest(message)
