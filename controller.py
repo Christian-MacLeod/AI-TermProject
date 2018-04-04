@@ -350,8 +350,10 @@ class CompetitiveController(Controller):
     type = "competitive_agent"
 
     def perceiveMessage(self, message):
-        #Receive message!
-        #NOTE: Called by other agents during their turn
+        if message["type"] == "found_all":
+            #Game is over, GameMaster will collect
+            return None
+
         return None
 
     def runTurn(self):
@@ -381,6 +383,11 @@ class CompetitiveController(Controller):
                     #Remember for later
                     self.memorizeObservedTarget(entity.controller.getPosition(), entity.controller.getFaction(), self.getFaction(), collected)
 
+        #If all targets found, brag
+        if self.memory["targets_found"] == 5:
+            message = {"type":"found_all", "sender":self.getFaction()}
+            self.broadcast_link(message)
+
         self.prepareGatherKnownTarget() #Collect found target
         self.prepareSeekTargets() #Look for targets
         self.prepareEvadeAgents(dodge) #Evade other agents
@@ -394,11 +401,16 @@ class CollaborativeController(Controller):
     type = "collaborative_agent"
 
     def perceiveMessage(self, message):
-        #Do the things, perceive the message
+        #Record observed data from other agent
         if message["type"] == "searched_at":
             self.memorizeAround(message["pos"])
             for target in message["targets"]:
                 self.memorizeObservedTarget(target["position"], target["faction"], message["sender"], target["collected"])
+
+        #Agent is bragging
+        if message["type"] == "found_all":
+            #Game is over, GameMaster will collect
+            return None
         return None
 
     def prepareTurnReport(self, visible_targets, position):
@@ -434,6 +446,11 @@ class CollaborativeController(Controller):
                     #Remember for later
                     self.memorizeObservedTarget(entity.controller.getPosition(), entity.controller.getFaction(), self.getFaction(), collected)
                     notify.append({"position":entity.controller.getPosition(), "faction":entity.controller.getFaction(), "collected":collected})
+
+        # If all targets found, brag
+        if self.memory["targets_found"] == 5:
+            message = {"type": "found_all", "sender": self.getFaction()}
+            self.broadcast_link(message)
 
         self.prepareTurnReport(notify, self.getPosition()) #Report findings to other agents
         self.prepareGatherKnownTarget() #Collect found target
@@ -490,6 +507,11 @@ class CompassionateController(Controller):
                     #Remember for later
                     self.memorizeObservedTarget(entity.controller.getPosition(), entity.controller.getFaction(), self.getFaction(), collected)
                     notify.append({"position":entity.controller.getPosition(), "faction":entity.controller.getFaction(), "collected":collected})
+
+        # If all targets found, brag
+        if self.memory["targets_found"] == 5:
+            message = {"type": "found_all", "sender": self.getFaction()}
+            self.broadcast_link(message)
 
         self.prepareTurnReport(notify) #Report findings to other agents
         self.prepareGatherKnownTarget() #Collect found target
