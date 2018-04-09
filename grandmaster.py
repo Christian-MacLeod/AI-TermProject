@@ -3,10 +3,10 @@ import gamemaster
 import userinterface
 
 class GrandMaster:
-    steps_remaining = 0
+    steps_remaining = 0 #Ensures all games are finished before compiling the results
     def __init__(self, thread_limit, dimensions=(99,99), scaled=(400,400)):
-        self.log_file = "C:/Users/100560504/Downloads/_Artificial Intelligence/G21_1.csv"
-        self.results_file = "C:/Users/100560504/Downloads/_Artificial Intelligence/G21_2.csv"
+        self.log_file = "G21_1.csv"
+        self.results_file = "G21_2.csv"
         self.max_threads = thread_limit
         self.thread_count_sem = threading.BoundedSemaphore(thread_limit)
         self.ui_lock = threading.BoundedSemaphore(1)
@@ -33,10 +33,10 @@ class GrandMaster:
 
 
     def iterateSimulation(self, amount):
-        self.steps_remaining = amount * 3
-        self.spawnCompetitiveGames(amount)
-        self.spawnCollaborativeGames(amount)
-        self.spawnCompassionateGames(amount)
+        self.steps_remaining = sum(amount)
+        self.spawnCompetitiveGames(amount[0])
+        self.spawnCollaborativeGames(amount[1])
+        self.spawnCompassionateGames(amount[2])
         while self.steps_remaining != 0:
             pass
         self.compileResults()
@@ -54,7 +54,10 @@ class GrandMaster:
 
         lines = []
         for i in range(len(count)):
-            lines.append("{0},{1},{2}\n".format(i, sum_i[i]/count[i], sum_k[i]/count[i]))
+            if count[i] == 0:
+                lines.append("{0},0,0".format(i))
+            else:
+                lines.append("{0},{1},{2}\n".format(i, sum_i[i]/count[i], sum_k[i]/count[i]))
 
         with open(self.results_file, "w") as results:
             results.writelines(lines)
